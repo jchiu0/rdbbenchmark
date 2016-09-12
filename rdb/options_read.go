@@ -36,3 +36,24 @@ func (opts *ReadOptions) Destroy() {
 func (opts *ReadOptions) SetFillCache(value bool) {
 	C.rocksdb_readoptions_set_fill_cache(opts.c, boolToChar(value))
 }
+
+// Enable a total order seek regardless of index format (e.g. hash index)
+// used in the table. Some table format (e.g. plain table) may not support
+// this option.
+// If true when calling Get(), we also skip prefix bloom when reading from
+// block based table. It provides a way to read exisiting data after
+// changing implementation of prefix extractor.
+// Default: false
+func (opts *ReadOptions) SetTotalOrderSeek(value bool) {
+	C.rocksdb_readoptions_set_total_order_seek(opts.c, boolToChar(value))
+}
+
+// Enforce that the iterator only iterates over the same prefix as the seek.
+// This option is effective only for prefix seeks, i.e. prefix_extractor is
+// non-null for the column family and total_order_seek is false.  Unlike
+// iterate_upper_bound, prefix_same_as_start only works within a prefix
+// but in both directions.
+// Default: false
+func (opts *ReadOptions) SetPrefixSameAsStart(value bool) {
+	C.rocksdb_readoptions_set_prefix_same_as_start(opts.c, boolToChar(value))
+}

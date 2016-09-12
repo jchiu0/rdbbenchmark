@@ -229,6 +229,16 @@ void rocksdb_readoptions_set_fill_cache(
   opt->rep.fill_cache = v;
 }
 
+void rocksdb_readoptions_set_total_order_seek(
+		rocksdb_readoptions_t* opt, unsigned char v) {
+	opt->rep.total_order_seek = v;
+}
+
+void rocksdb_readoptions_set_prefix_same_as_start(
+		rocksdb_readoptions_t* opt, unsigned char v) {
+	opt->rep.prefix_same_as_start = v;
+}
+
 //////////////////////////// rocksdb_writeoptions_t
 rocksdb_writeoptions_t* rocksdb_writeoptions_create() {
   return new rocksdb_writeoptions_t;
@@ -576,4 +586,14 @@ rocksdb_slicetransform_t* rocksdb_slicetransform_create_fixed_prefix(size_t pref
 void rocksdb_options_set_prefix_extractor(
     rocksdb_options_t* opt, rocksdb_slicetransform_t* prefix_extractor) {
   opt->rep.prefix_extractor.reset(prefix_extractor);
+}
+
+rocksdb_slicetransform_t* rdbc_slicetransform_create(uintptr_t idx) {
+    return rocksdb_slicetransform_create(
+    	(void*)idx,
+    	rdbc_destruct_handler,
+    	(char* (*)(void*, const char*, size_t, size_t*))(rdbc_slicetransform_transform),
+    	(unsigned char (*)(void*, const char*, size_t))(rdbc_slicetransform_in_domain),
+    	(unsigned char (*)(void*, const char*, size_t))(rdbc_slicetransform_in_range),
+    	(const char* (*)(void*))(rdbc_slicetransform_name));
 }

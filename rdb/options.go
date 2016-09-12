@@ -54,7 +54,7 @@ func (opts *Options) SetPrefixExtractor(value SliceTransform) {
 		opts.cst = nst.c
 	} else {
 		idx := registerSliceTransform(value)
-		opts.cst = C.rocksdb_slicetransform_create(C.uintptr_t(idx))
+		opts.cst = C.rdbc_slicetransform_create(C.uintptr_t(idx))
 	}
 	C.rocksdb_options_set_prefix_extractor(opts.c, opts.cst)
 }

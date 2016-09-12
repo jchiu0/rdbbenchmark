@@ -84,6 +84,10 @@ rocksdb_readoptions_t* rocksdb_readoptions_create();
 void rocksdb_readoptions_destroy(rocksdb_readoptions_t* opt);
 void rocksdb_readoptions_set_fill_cache(
     rocksdb_readoptions_t* opt, unsigned char v);
+void rocksdb_readoptions_set_total_order_seek(
+		rocksdb_readoptions_t* opt, unsigned char v);
+void rocksdb_readoptions_set_prefix_same_as_start(
+		rocksdb_readoptions_t* opt, unsigned char v);
 
 //////////////////////////// rocksdb_writeoptions_t
 rocksdb_writeoptions_t* rocksdb_writeoptions_create();
@@ -166,6 +170,7 @@ void rocksdb_slicetransform_destroy(rocksdb_slicetransform_t* st);
 rocksdb_slicetransform_t* rocksdb_slicetransform_create_fixed_prefix(size_t prefixLen);
 void rocksdb_options_set_prefix_extractor(
     rocksdb_options_t* opt, rocksdb_slicetransform_t* prefix_extractor);
+rocksdb_slicetransform_t* rdbc_slicetransform_create(uintptr_t idx);
 
 #ifdef __cplusplus
 }  /* end extern "C" */
