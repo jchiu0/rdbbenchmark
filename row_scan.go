@@ -58,6 +58,10 @@ func rowScanWriteOptions() *rdb.WriteOptions {
 	return wopt
 }
 
+func rowScanFlushOptions() *rdb.FlushOptions {
+	return rdb.NewDefaultFlushOptions()
+}
+
 func benchRowScan(valSize int, b *testing.B) {
 	path, err := ioutil.TempDir("", "rdbbenchmark")
 	check(err)
@@ -68,6 +72,7 @@ func benchRowScan(valSize int, b *testing.B) {
 	check(err)
 	ropt := rowScanReadOptions()
 	wopt := rowScanWriteOptions()
+	fopt := rowScanFlushOptions()
 
 	if (valSize % itemSize) != 0 {
 		log.Fatalf("Wrong valSize: %d %d", valSize, itemSize)
@@ -79,6 +84,7 @@ func benchRowScan(valSize int, b *testing.B) {
 			db.Put(wopt, []byte(getKey(i)+fmt.Sprintf("%08d", j)), val)
 		}
 	}
+	db.Flush(fopt)
 
 	queryKey := []byte(getKey(queryKeyID))
 	b.ResetTimer()

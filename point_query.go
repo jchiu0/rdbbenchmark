@@ -34,6 +34,10 @@ func pointQueryWriteOptions() *rdb.WriteOptions {
 	return wopt
 }
 
+func pointQueryFlushOptions() *rdb.FlushOptions {
+	return rdb.NewDefaultFlushOptions()
+}
+
 func benchPointQuery(valSize int, b *testing.B) {
 	path, err := ioutil.TempDir("", "rdbbenchmark")
 	check(err)
@@ -43,10 +47,13 @@ func benchPointQuery(valSize int, b *testing.B) {
 	check(err)
 	ropt := pointQueryReadOptions()
 	wopt := pointQueryWriteOptions()
+	fopt := pointQueryFlushOptions()
+
 	val := make([]byte, valSize)
 	for i := 0; i < numKeys; i++ {
 		db.Put(wopt, []byte(getKey(i)), val)
 	}
+	db.Flush(fopt)
 
 	queryKey := []byte(getKey(queryKeyID))
 	b.ResetTimer()

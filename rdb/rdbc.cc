@@ -35,6 +35,7 @@ using rocksdb::NewLRUCache;
 using rocksdb::BlockBasedTableOptions;
 using rocksdb::SliceTransform;
 using rocksdb::CompressionType;
+using rocksdb::FlushOptions;
 
 struct rocksdb_t { DB* rep; };
 struct rocksdb_options_t { Options rep; };
@@ -47,6 +48,7 @@ struct rocksdb_writebatch_t { WriteBatch rep; };
 struct rocksdb_iterator_t { Iterator* rep; };
 struct rocksdb_cache_t { std::shared_ptr<Cache> rep; };
 struct rocksdb_block_based_table_options_t { BlockBasedTableOptions rep; };
+struct rocksdb_flushoptions_t { FlushOptions rep; };
 
 bool SaveError(char** errptr, const Status& s) {
   assert(errptr != nullptr);
@@ -139,6 +141,13 @@ void rocksdb_delete(
     const char* key, size_t keylen,
     char** errptr) {
   SaveError(errptr, db->rep->Delete(options->rep, Slice(key, keylen)));
+}
+
+void rocksdb_flush(
+    rocksdb_t* db,
+    const rocksdb_flushoptions_t* options,
+    char** errptr) {
+  SaveError(errptr, db->rep->Flush(options->rep));
 }
 
 char* rocksdb_property_value(
@@ -317,6 +326,11 @@ void rocksdb_writeoptions_destroy(rocksdb_writeoptions_t* opt) {
 void rocksdb_writeoptions_set_sync(
     rocksdb_writeoptions_t* opt, unsigned char v) {
   opt->rep.sync = v;
+}
+
+//////////////////////////// rocksdb_flushoptions_t
+rocksdb_flushoptions_t* rocksdb_flushoptions_create() {
+  return new rocksdb_flushoptions_t;
 }
 
 //////////////////////////// rocksdb_iterator_t

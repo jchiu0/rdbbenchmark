@@ -142,6 +142,17 @@ func (db *DB) Write(opts *WriteOptions, batch *WriteBatch) error {
 	return nil
 }
 
+// Flush triggers a manuel flush for the database.
+func (db *DB) Flush(opts *FlushOptions) error {
+	var cErr *C.char
+	C.rocksdb_flush(db.c, opts.c, &cErr)
+	if cErr != nil {
+		defer C.free(unsafe.Pointer(cErr))
+		return errors.New(C.GoString(cErr))
+	}
+	return nil
+}
+
 // NewIterator returns an Iterator over the the database that uses the
 // ReadOptions given.
 func (db *DB) NewIterator(opts *ReadOptions) *Iterator {

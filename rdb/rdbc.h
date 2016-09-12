@@ -18,6 +18,7 @@ typedef struct rocksdb_filterpolicy_t rocksdb_filterpolicy_t;
 typedef struct rocksdb_cache_t rocksdb_cache_t;
 typedef struct rocksdb_block_based_table_options_t rocksdb_block_based_table_options_t;
 typedef struct rocksdb_slicetransform_t rocksdb_slicetransform_t;
+typedef struct rocksdb_flushoptions_t rocksdb_flushoptions_t;
 
 //////////////////////////// rocksdb_t
 rocksdb_t* rocksdb_open(
@@ -65,6 +66,10 @@ void rocksdb_writebatch_put(
 void rocksdb_writebatch_delete(
     rocksdb_writebatch_t* b,
     const char* key, size_t klen);
+void rocksdb_flush(
+    rocksdb_t* db,
+    const rocksdb_flushoptions_t* options,
+    char** errptr);
 void rocksdb_write(
     rocksdb_t* db,
     const rocksdb_writeoptions_t* options,
@@ -117,6 +122,9 @@ rocksdb_writeoptions_t* rocksdb_writeoptions_create();
 void rocksdb_writeoptions_destroy(rocksdb_writeoptions_t* opt);
 void rocksdb_writeoptions_set_sync(
     rocksdb_writeoptions_t* opt, unsigned char v);
+
+//////////////////////////// rocksdb_flushoptions_t
+rocksdb_flushoptions_t* rocksdb_flushoptions_create();
 
 //////////////////////////// rocksdb_iterator_t
 rocksdb_iterator_t* rocksdb_create_iterator(
