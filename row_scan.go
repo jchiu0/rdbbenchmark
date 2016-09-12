@@ -16,22 +16,38 @@ func rowScanOptions() *rdb.Options {
 	bbto.SetBlockCache(cache)
 	bbto.SetWholeKeyFiltering(false)
 	bbto.SetIndexType(rdb.HashSearch)
-	//	bbto.SetFilterPolicy(rdb.NewBloomFilter(10))
+
+	// For our test, all queries hit the table, so bloom filters save nothing.
+	// For simplicity, there is no need to enable it.
+	// bbto.SetFilterPolicy(rdb.NewBloomFilter(10))
 
 	opt := rdb.NewDefaultOptions()
 	opt.SetCreateIfMissing(true)
 	opt.SetBlockBasedTableFactory(bbto)
 	opt.SetPrefixExtractor(rdb.NewFixedPrefixTransform(prefixLength))
-	opt.SetHashSkipListRep(10000, 10, 4)
-	opt.SetCompression(rdb.NoCompression) // Temporarily no compression.
 
-	// 	opt.SetPlainTableFactory(prefixLength, 10, 0.75, 16, 1)
+	// This speeds up by about ~10%.
+	opt.SetHashSkipListRep(10000, 10, 4)
+
+	// Whether there is compression or not does not seem to affect benchmarks
+	// because the test is small. However, row scan is still a LOT slower than point
+	// queries. This suggests that everything is in block cache during the test,
+	// which means it is uncompressed.
+	opt.SetCompression(rdb.NoCompression)
+
+	// Changing from block format to plain table format does not speed up row scan
+	// in this test at all. This is again because everything is already in memory
+	// yet, so there is little gain going to plain table format.
+	// opt.SetPlainTableFactory(prefixLength, 10, 0.75, 16, 1)
 	return opt
 }
 
 func rowScanReadOptions() *rdb.ReadOptions {
 	ropt := rdb.NewDefaultReadOptions()
 	ropt.SetTotalOrderSeek(false)
+
+	// This speeds things up a lot as we don't have to run ValidWithPrefix which is
+	// much slower than valid.
 	ropt.SetPrefixSameAsStart(prefixSameAsStart)
 	return ropt
 }
@@ -78,7 +94,17 @@ func benchRowScan(valSize int, b *testing.B) {
 				count++
 			}
 		}
-		count = numItems
+
+		// If we know numbe rof items in advance, and avoid calling Valid(), row scans
+		// take about half as much time!
+		//		{
+		//			iter.Seek(queryKey)
+		//			for i := 0; i < numItems; i++ {
+		//				iter.Next()
+		//			}
+		//			count = numItems
+		//		}
+
 		if count != numItems {
 			log.Fatalf("Wrong number of item: %d vs %d", count, numItems)
 		}
