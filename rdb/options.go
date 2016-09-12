@@ -58,3 +58,41 @@ func (opts *Options) SetPrefixExtractor(value SliceTransform) {
 	}
 	C.rocksdb_options_set_prefix_extractor(opts.c, opts.cst)
 }
+
+// SetMemtablePrefixBloomBits sets the bloom bits for prefix extractor.
+//
+// If prefix_extractor is set and bloom_bits is not 0, create prefix bloom
+// for memtable.
+// Default: 0
+func (opts *Options) SetMemtablePrefixBloomBits(value uint32) {
+	C.rocksdb_options_set_memtable_prefix_bloom_bits(opts.c, C.uint32_t(value))
+}
+
+// SetMemtablePrefixBloomProbes sets the number of hash probes per key.
+// Default: 6
+func (opts *Options) SetMemtablePrefixBloomProbes(value uint32) {
+	C.rocksdb_options_set_memtable_prefix_bloom_probes(opts.c, C.uint32_t(value))
+}
+
+// SetHashSkipListRep sets a hash skip list as MemTableRep.
+//
+// It contains a fixed array of buckets, each
+// pointing to a skiplist (null if the bucket is empty).
+//
+// bucketCount:             number of fixed array buckets
+// skiplistHeight:          the max height of the skiplist
+// skiplistBranchingFactor: probabilistic size ratio between adjacent
+//                          link lists in the skiplist
+func (opts *Options) SetHashSkipListRep(bucketCount int, skiplistHeight, skiplistBranchingFactor int32) {
+	C.rocksdb_options_set_hash_skip_list_rep(opts.c, C.size_t(bucketCount), C.int32_t(skiplistHeight), C.int32_t(skiplistBranchingFactor))
+}
+
+// SetHashLinkListRep sets a hashed linked list as MemTableRep.
+//
+// It contains a fixed array of buckets, each pointing to a sorted single
+// linked list (null if the bucket is empty).
+//
+// bucketCount: number of fixed array buckets
+func (opts *Options) SetHashLinkListRep(bucketCount int) {
+	C.rocksdb_options_set_hash_link_list_rep(opts.c, C.size_t(bucketCount))
+}

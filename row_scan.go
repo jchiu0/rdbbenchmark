@@ -10,84 +10,44 @@ import (
 	"github.com/jchiu0/rdbbenchmark/rdb"
 )
 
-func check(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
+func rowScanOptions() *rdb.Options {
+	bbto := rdb.NewDefaultBlockBasedTableOptions()
+	cache := rdb.NewLRUCache(blockCacheSize)
+	bbto.SetBlockCache(cache)
 
-const (
-	numKeys           = 1024
-	itemSize          = 8
-	prefixSameAsStart = true
-	queryKeyID        = int(numKeys) / 2
-)
-
-func getKey(i int) string {
-	return fmt.Sprintf("%08d", i)
-}
-
-func getOptions() *rdb.Options {
 	opt := rdb.NewDefaultOptions()
 	opt.SetCreateIfMissing(true)
-	// Assume 8 bytes for prefix. Should be consistent with GetKey.
-	opt.SetPrefixExtractor(rdb.NewFixedPrefixTransform(8))
+	opt.SetBlockBasedTableFactory(bbto)
+	opt.SetPrefixExtractor(rdb.NewFixedPrefixTransform(prefixLength))
+	//	opt.SetMemtablePrefixBloomBits(100000000)
+	opt.SetMemtablePrefixBloomProbes(6)
+	opt.SetHashSkipListRep(10000, 10, 4)
 	return opt
 }
 
-func getReadOptions() *rdb.ReadOptions {
+func rowScanReadOptions() *rdb.ReadOptions {
 	ropt := rdb.NewDefaultReadOptions()
 	ropt.SetTotalOrderSeek(false)
 	ropt.SetPrefixSameAsStart(prefixSameAsStart)
 	return ropt
 }
 
-func getWriteOptions() *rdb.WriteOptions {
+func rowScanWriteOptions() *rdb.WriteOptions {
 	wopt := rdb.NewDefaultWriteOptions()
 	wopt.SetSync(false) // We don't need to do synchronous writes.
 	return wopt
-}
-
-func benchPointQuery(valSize int, b *testing.B) {
-	path, err := ioutil.TempDir("", "rdbbenchmark")
-	check(err)
-	defer os.RemoveAll(path)
-	opt := getOptions()
-	db, err := rdb.OpenDb(opt, path)
-	check(err)
-	ropt := getReadOptions()
-	wopt := getWriteOptions()
-	val := make([]byte, valSize)
-	for i := 0; i < numKeys; i++ {
-		db.Put(wopt, []byte(getKey(i)), val)
-	}
-
-	queryKey := []byte(getKey(queryKeyID))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		slice, err := db.Get(ropt, queryKey)
-		check(err)
-		if slice == nil {
-			log.Fatal("Invalid result")
-		}
-		data := slice.Data()
-		if data == nil {
-			log.Fatal("Invalid result")
-		}
-	}
-	b.StopTimer()
 }
 
 func benchRowScan(valSize int, b *testing.B) {
 	path, err := ioutil.TempDir("", "rdbbenchmark")
 	check(err)
 	defer os.RemoveAll(path)
-	opt := getOptions()
+	opt := rowScanOptions()
 
 	db, err := rdb.OpenDb(opt, path)
 	check(err)
-	ropt := getReadOptions()
-	wopt := getWriteOptions()
+	ropt := rowScanReadOptions()
+	wopt := rowScanWriteOptions()
 
 	if (valSize % itemSize) != 0 {
 		log.Fatalf("Wrong valSize: %d %d", valSize, itemSize)
@@ -114,6 +74,7 @@ func benchRowScan(valSize int, b *testing.B) {
 				count++
 			}
 		}
+		count = numItems
 		if count != numItems {
 			log.Fatalf("Wrong number of item: %d vs %d", count, numItems)
 		}

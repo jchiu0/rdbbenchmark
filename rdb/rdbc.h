@@ -78,6 +78,15 @@ void rocksdb_options_set_create_if_missing(
 void rocksdb_options_set_block_based_table_factory(
     rocksdb_options_t *opt,
     rocksdb_block_based_table_options_t* table_options);
+void rocksdb_options_set_memtable_prefix_bloom_bits(
+    rocksdb_options_t*, uint32_t);
+void rocksdb_options_set_memtable_prefix_bloom_probes(
+		rocksdb_options_t*, uint32_t);
+void rocksdb_options_set_hash_skip_list_rep(
+    rocksdb_options_t *opt, size_t bucket_count,
+    int32_t skiplist_height, int32_t skiplist_branching_factor);
+void rocksdb_options_set_hash_link_list_rep(
+    rocksdb_options_t *opt, size_t bucket_count);
 
 //////////////////////////// rocksdb_readoptions_t
 rocksdb_readoptions_t* rocksdb_readoptions_create();

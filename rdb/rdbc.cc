@@ -10,6 +10,7 @@
 #include <rocksdb/db.h>
 #include <rocksdb/filter_policy.h>
 #include <rocksdb/iterator.h>
+#include "rocksdb/memtablerep.h"
 #include <rocksdb/options.h>
 #include <rocksdb/slice_transform.h>
 #include <rocksdb/status.h>
@@ -213,6 +214,36 @@ void rocksdb_options_set_block_based_table_factory(
     opt->rep.table_factory.reset(
         rocksdb::NewBlockBasedTableFactory(table_options->rep));
   }
+}
+
+void rocksdb_options_set_memtable_prefix_bloom_bits(
+    rocksdb_options_t* opt, uint32_t v) {
+	opt->rep.memtable_prefix_bloom_bits = v;
+}
+
+void rocksdb_options_set_memtable_prefix_bloom_probes(
+		rocksdb_options_t* opt, uint32_t v) {
+	opt->rep.memtable_prefix_bloom_probes = v;
+}
+
+void rocksdb_options_set_hash_skip_list_rep(
+    rocksdb_options_t *opt, size_t bucket_count,
+    int32_t skiplist_height, int32_t skiplist_branching_factor) {
+  static rocksdb::MemTableRepFactory* factory = 0;
+  if (!factory) {
+    factory = rocksdb::NewHashSkipListRepFactory(
+        bucket_count, skiplist_height, skiplist_branching_factor);
+  }
+  opt->rep.memtable_factory.reset(factory);
+}
+
+void rocksdb_options_set_hash_link_list_rep(
+    rocksdb_options_t *opt, size_t bucket_count) {
+  static rocksdb::MemTableRepFactory* factory = 0;
+  if (!factory) {
+    factory = rocksdb::NewHashLinkListRepFactory(bucket_count);
+  }
+  opt->rep.memtable_factory.reset(factory);
 }
 
 //////////////////////////// rocksdb_readoptions_t
