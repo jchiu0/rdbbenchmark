@@ -78,15 +78,29 @@ void rocksdb_options_set_create_if_missing(
 void rocksdb_options_set_block_based_table_factory(
     rocksdb_options_t *opt,
     rocksdb_block_based_table_options_t* table_options);
-void rocksdb_options_set_memtable_prefix_bloom_bits(
-    rocksdb_options_t*, uint32_t);
-void rocksdb_options_set_memtable_prefix_bloom_probes(
-		rocksdb_options_t*, uint32_t);
 void rocksdb_options_set_hash_skip_list_rep(
     rocksdb_options_t *opt, size_t bucket_count,
     int32_t skiplist_height, int32_t skiplist_branching_factor);
 void rocksdb_options_set_hash_link_list_rep(
     rocksdb_options_t *opt, size_t bucket_count);
+		
+enum {
+  rocksdb_no_compression = 0,
+  rocksdb_snappy_compression = 1,
+  rocksdb_zlib_compression = 2,
+  rocksdb_bz2_compression = 3,
+  rocksdb_lz4_compression = 4,
+  rocksdb_lz4hc_compression = 5
+};
+void rocksdb_options_set_compression(rocksdb_options_t* opt, int t);
+void rocksdb_options_set_compression_per_level(rocksdb_options_t* opt,
+                                               int* level_values,
+                                               size_t num_levels);
+void rocksdb_options_set_min_level_to_compress(rocksdb_options_t* opt, int level);
+
+void rocksdb_options_set_plain_table_factory(
+    rocksdb_options_t *opt, uint32_t user_key_len, int bloom_bits_per_key,
+    double hash_table_ratio, size_t index_sparseness, int encodingType);
 
 //////////////////////////// rocksdb_readoptions_t
 rocksdb_readoptions_t* rocksdb_readoptions_create();
@@ -165,6 +179,19 @@ void rocksdb_block_based_options_set_block_cache_compressed(
     rocksdb_cache_t* block_cache_compressed);
 void rocksdb_block_based_options_set_whole_key_filtering(
     rocksdb_block_based_table_options_t* options, unsigned char v);
+
+// Index type of block based options.
+enum {
+   // A space efficient index block that is optimized for
+   // binary-search-based index.
+   rocksdb_binary_search = 0,
+
+   // The hash index, if enabled, will do the hash lookup when
+   // `Options.prefix_extractor` is provided.
+   rocksdb_hash_search = 1,
+ };
+void rocksdb_block_based_options_set_index_type(
+    rocksdb_block_based_table_options_t* options, int v);
 
 //////////////////////////// rocksdb_slicetransform_t
 rocksdb_slicetransform_t*

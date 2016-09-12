@@ -18,6 +18,21 @@ type Options struct {
 	cst *C.rocksdb_slicetransform_t
 }
 
+// CompressionType specifies the block compression.
+// DB contents are stored in a set of blocks, each of which holds a
+// sequence of key,value pairs. Each block may be compressed before
+// being stored in a file. The following enum describes which
+// compression method (if any) is used to compress a block.
+type CompressionType uint
+
+// Compression types.
+const (
+	NoCompression     = CompressionType(C.rocksdb_no_compression)
+	SnappyCompression = CompressionType(C.rocksdb_snappy_compression)
+	ZLibCompression   = CompressionType(C.rocksdb_zlib_compression)
+	Bz2Compression    = CompressionType(C.rocksdb_bz2_compression)
+)
+
 // NewDefaultOptions creates the default Options.
 func NewDefaultOptions() *Options {
 	return NewNativeOptions(C.rocksdb_options_create())
@@ -59,21 +74,6 @@ func (opts *Options) SetPrefixExtractor(value SliceTransform) {
 	C.rocksdb_options_set_prefix_extractor(opts.c, opts.cst)
 }
 
-// SetMemtablePrefixBloomBits sets the bloom bits for prefix extractor.
-//
-// If prefix_extractor is set and bloom_bits is not 0, create prefix bloom
-// for memtable.
-// Default: 0
-func (opts *Options) SetMemtablePrefixBloomBits(value uint32) {
-	C.rocksdb_options_set_memtable_prefix_bloom_bits(opts.c, C.uint32_t(value))
-}
-
-// SetMemtablePrefixBloomProbes sets the number of hash probes per key.
-// Default: 6
-func (opts *Options) SetMemtablePrefixBloomProbes(value uint32) {
-	C.rocksdb_options_set_memtable_prefix_bloom_probes(opts.c, C.uint32_t(value))
-}
-
 // SetHashSkipListRep sets a hash skip list as MemTableRep.
 //
 // It contains a fixed array of buckets, each
@@ -95,4 +95,58 @@ func (opts *Options) SetHashSkipListRep(bucketCount int, skiplistHeight, skiplis
 // bucketCount: number of fixed array buckets
 func (opts *Options) SetHashLinkListRep(bucketCount int) {
 	C.rocksdb_options_set_hash_link_list_rep(opts.c, C.size_t(bucketCount))
+}
+
+// SetCompression sets the compression algorithm.
+// Default: SnappyCompression, which gives lightweight but fast
+// compression.
+func (opts *Options) SetCompression(value CompressionType) {
+	C.rocksdb_options_set_compression(opts.c, C.int(value))
+}
+
+// SetCompressionPerLevel sets different compression algorithm per level.
+//
+// Different levels can have different compression policies. There
+// are cases where most lower levels would like to quick compression
+// algorithm while the higher levels (which have more data) use
+// compression algorithms that have better compression but could
+// be slower. This array should have an entry for
+// each level of the database. This array overrides the
+// value specified in the previous field 'compression'.
+func (opts *Options) SetCompressionPerLevel(value []CompressionType) {
+	cLevels := make([]C.int, len(value))
+	for i, v := range value {
+		cLevels[i] = C.int(v)
+	}
+	C.rocksdb_options_set_compression_per_level(opts.c, &cLevels[0], C.size_t(len(value)))
+}
+
+// SetMinLevelToCompress sets the start level to use compression.
+func (opts *Options) SetMinLevelToCompress(value int) {
+	C.rocksdb_options_set_min_level_to_compress(opts.c, C.int(value))
+}
+
+// SetPlainTableFactory sets a plain table factory with prefix-only seek.
+//
+// For this factory, you need to set prefix_extractor properly to make it
+// work. Look-up will starts with prefix hash lookup for key prefix. Inside the
+// hash bucket found, a binary search is executed for hash conflicts. Finally,
+// a linear search is used.
+//
+// keyLen: 			plain table has optimization for fix-sized keys,
+// 					which can be specified via keyLen.
+// bloomBitsPerKey: the number of bits used for bloom filer per prefix. You
+//                  may disable it by passing a zero.
+// hashTableRatio:  the desired utilization of the hash table used for prefix
+//                  hashing. hashTableRatio = number of prefixes / #buckets
+//                  in the hash table
+// indexSparseness: inside each prefix, need to build one index record for how
+//                  many keys for binary search inside each hash bucket.
+// Suggested values:
+//   bloomBitsPerKey: 10
+//   hashTableRatio: 0.75
+//   indexSparseness: 16
+//   encodingType: IndexPlain
+func (opts *Options) SetPlainTableFactory(keyLen uint32, bloomBitsPerKey int, hashTableRatio float64, indexSparseness int, encodingType int) {
+	C.rocksdb_options_set_plain_table_factory(opts.c, C.uint32_t(keyLen), C.int(bloomBitsPerKey), C.double(hashTableRatio), C.size_t(indexSparseness), C.int(encodingType))
 }

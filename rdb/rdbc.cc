@@ -10,7 +10,7 @@
 #include <rocksdb/db.h>
 #include <rocksdb/filter_policy.h>
 #include <rocksdb/iterator.h>
-#include "rocksdb/memtablerep.h"
+#include <rocksdb/memtablerep.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice_transform.h>
 #include <rocksdb/status.h>
@@ -34,6 +34,7 @@ using rocksdb::Cache;
 using rocksdb::NewLRUCache;
 using rocksdb::BlockBasedTableOptions;
 using rocksdb::SliceTransform;
+using rocksdb::CompressionType;
 
 struct rocksdb_t { DB* rep; };
 struct rocksdb_options_t { Options rep; };
@@ -216,16 +217,6 @@ void rocksdb_options_set_block_based_table_factory(
   }
 }
 
-void rocksdb_options_set_memtable_prefix_bloom_bits(
-    rocksdb_options_t* opt, uint32_t v) {
-	opt->rep.memtable_prefix_bloom_bits = v;
-}
-
-void rocksdb_options_set_memtable_prefix_bloom_probes(
-		rocksdb_options_t* opt, uint32_t v) {
-	opt->rep.memtable_prefix_bloom_probes = v;
-}
-
 void rocksdb_options_set_hash_skip_list_rep(
     rocksdb_options_t *opt, size_t bucket_count,
     int32_t skiplist_height, int32_t skiplist_branching_factor) {
@@ -244,6 +235,50 @@ void rocksdb_options_set_hash_link_list_rep(
     factory = rocksdb::NewHashLinkListRepFactory(bucket_count);
   }
   opt->rep.memtable_factory.reset(factory);
+}
+
+void rocksdb_options_set_compression(rocksdb_options_t* opt, int t) {
+  opt->rep.compression = static_cast<CompressionType>(t);
+}
+
+void rocksdb_options_set_compression_per_level(rocksdb_options_t* opt,
+                                               int* level_values,
+                                               size_t num_levels) {
+  opt->rep.compression_per_level.resize(num_levels);
+  for (size_t i = 0; i < num_levels; ++i) {
+    opt->rep.compression_per_level[i] =
+      static_cast<CompressionType>(level_values[i]);
+  }
+}
+
+void rocksdb_options_set_min_level_to_compress(rocksdb_options_t* opt, int level) {
+  if (level >= 0) {
+    assert(level <= opt->rep.num_levels);
+    opt->rep.compression_per_level.resize(opt->rep.num_levels);
+    for (int i = 0; i < level; i++) {
+      opt->rep.compression_per_level[i] = rocksdb::kNoCompression;
+    }
+    for (int i = level; i < opt->rep.num_levels; i++) {
+      opt->rep.compression_per_level[i] = opt->rep.compression;
+    }
+  }
+}
+
+void rocksdb_options_set_plain_table_factory(
+    rocksdb_options_t *opt, uint32_t user_key_len, int bloom_bits_per_key,
+    double hash_table_ratio, size_t index_sparseness, int encodingType) {
+  static rocksdb::TableFactory* factory = 0;
+  if (!factory) {
+    rocksdb::PlainTableOptions options;
+    options.user_key_len = user_key_len;
+    options.bloom_bits_per_key = bloom_bits_per_key;
+    options.hash_table_ratio = hash_table_ratio;
+    options.index_sparseness = index_sparseness;
+		options.encoding_type = (rocksdb::EncodingType)encodingType;
+		
+    factory = rocksdb::NewPlainTableFactory(options);
+  }
+  opt->rep.table_factory.reset(factory);
 }
 
 //////////////////////////// rocksdb_readoptions_t
@@ -526,6 +561,11 @@ void rocksdb_block_based_options_set_block_cache_compressed(
 void rocksdb_block_based_options_set_whole_key_filtering(
     rocksdb_block_based_table_options_t* options, unsigned char v) {
   options->rep.whole_key_filtering = v;
+}
+
+void rocksdb_block_based_options_set_index_type(
+    rocksdb_block_based_table_options_t* options, int v) {
+  options->rep.index_type = static_cast<BlockBasedTableOptions::IndexType>(v);
 }
 
 //////////////////////////// rocksdb_slicetransform_t

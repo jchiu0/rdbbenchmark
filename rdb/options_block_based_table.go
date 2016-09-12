@@ -19,6 +19,15 @@ type BlockBasedTableOptions struct {
 	cFp *C.rocksdb_filterpolicy_t
 }
 
+// IndexType for block based table options.
+type IndexType uint
+
+// IndexTypes.
+const (
+	BinarySearch = IndexType(C.rocksdb_binary_search)
+	HashSearch   = IndexType(C.rocksdb_hash_search)
+)
+
 // NewDefaultBlockBasedTableOptions creates a default BlockBasedTableOptions object.
 func NewDefaultBlockBasedTableOptions() *BlockBasedTableOptions {
 	return NewNativeBlockBasedTableOptions(C.rocksdb_block_based_options_create())
@@ -91,4 +100,9 @@ func (opts *BlockBasedTableOptions) SetBlockCacheCompressed(cache *Cache) {
 // Default: true
 func (opts *BlockBasedTableOptions) SetWholeKeyFiltering(value bool) {
 	C.rocksdb_block_based_options_set_whole_key_filtering(opts.c, boolToChar(value))
+}
+
+// SetIndexType sets the start level to use compression.
+func (opts *BlockBasedTableOptions) SetIndexType(value IndexType) {
+	C.rocksdb_block_based_options_set_index_type(opts.c, C.int(value))
 }

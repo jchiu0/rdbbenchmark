@@ -14,14 +14,18 @@ func rowScanOptions() *rdb.Options {
 	bbto := rdb.NewDefaultBlockBasedTableOptions()
 	cache := rdb.NewLRUCache(blockCacheSize)
 	bbto.SetBlockCache(cache)
+	bbto.SetWholeKeyFiltering(false)
+	bbto.SetIndexType(rdb.HashSearch)
+	//	bbto.SetFilterPolicy(rdb.NewBloomFilter(10))
 
 	opt := rdb.NewDefaultOptions()
 	opt.SetCreateIfMissing(true)
 	opt.SetBlockBasedTableFactory(bbto)
 	opt.SetPrefixExtractor(rdb.NewFixedPrefixTransform(prefixLength))
-	//	opt.SetMemtablePrefixBloomBits(100000000)
-	opt.SetMemtablePrefixBloomProbes(6)
 	opt.SetHashSkipListRep(10000, 10, 4)
+	opt.SetCompression(rdb.NoCompression) // Temporarily no compression.
+
+	// 	opt.SetPlainTableFactory(prefixLength, 10, 0.75, 16, 1)
 	return opt
 }
 
